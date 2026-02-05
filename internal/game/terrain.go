@@ -38,3 +38,13 @@ func (t *Terrain) At(x, y int32) TerrainType {
 func (t *Terrain) Set(x, y int32, tt TerrainType) {
 	t.Tiles[y*t.Width+x] = byte(tt)
 }
+
+// IsWalkable returns true if the tile at (x, y) can be walked on.
+// Walkable terrain: Grass, Dirt. Out-of-bounds is not walkable.
+func (t *Terrain) IsWalkable(x, y int32) bool {
+	if !t.InBounds(x, y) {
+		return false
+	}
+	tt := t.At(x, y)
+	return tt == Grass || tt == Dirt
+}

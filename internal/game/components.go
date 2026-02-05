@@ -50,3 +50,7 @@ type ResourceStore struct {
 	Gold   int32
 	Lumber int32
 }
+
+type MoveTarget struct {
+	X, Y int32 // fixed-point target position
+}

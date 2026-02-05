@@ -197,7 +197,66 @@ func abs32(v int32) int32 {
 // Step advances the simulation by one tick.
 func (s *Scenario) Step() {
 	s.Tick++
-	// Future systems called here in fixed order
+	s.runMovement()
+}
+
+// isqrt64 returns the integer square root of n using Newton's method.
+func isqrt64(n int64) int64 {
+	if n <= 0 {
+		return 0
+	}
+	x := n
+	y := (x + 1) / 2
+	for y < x {
+		x = y
+		y = (x + n/x) / 2
+	}
+	return x
+}
+
+// runMovement moves entities with MaskMoveTarget toward their target.
+func (s *Scenario) runMovement() {
+	w := &s.World
+	mask := MaskPosition | MaskMovement | MaskMoveTarget
+	w.Each(mask, func(idx int32) bool {
+		pos := &w.Position[idx]
+		tgt := &w.MoveTarget[idx]
+		speed := int64(w.Movement[idx].Speed)
+
+		dx := int64(tgt.X) - int64(pos.X)
+		dy := int64(tgt.Y) - int64(pos.Y)
+		dist := isqrt64(dx*dx + dy*dy)
+
+		var newX, newY int32
+		if dist <= speed {
+			// Close enough — snap to target
+			newX = tgt.X
+			newY = tgt.Y
+		} else {
+			// Move toward target
+			newX = pos.X + int32(dx*speed/dist)
+			newY = pos.Y + int32(dy*speed/dist)
+		}
+
+		// Check walkability of destination tile
+		tileX := newX / 1000
+		tileY := newY / 1000
+		if !s.Terrain.IsWalkable(tileX, tileY) {
+			// Blocked — stop and clear move order
+			w.Entities[idx].Mask &^= MaskMoveTarget
+			return true
+		}
+
+		pos.X = newX
+		pos.Y = newY
+
+		// If we snapped to target, clear the move order
+		if dist <= speed {
+			w.Entities[idx].Mask &^= MaskMoveTarget
+		}
+
+		return true
+	})
 }
 
 // SetupMatch spawns starting units for both players.

@@ -192,6 +192,187 @@ func TestStep(t *testing.T) {
 	}
 }
 
+func TestTerrainWalkability(t *testing.T) {
+	ter := NewTerrain(10, 10)
+	// Default is Grass — walkable
+	if !ter.IsWalkable(0, 0) {
+		t.Fatal("grass should be walkable")
+	}
+
+	ter.Set(1, 0, Dirt)
+	if !ter.IsWalkable(1, 0) {
+		t.Fatal("dirt should be walkable")
+	}
+
+	ter.Set(2, 0, Water)
+	if ter.IsWalkable(2, 0) {
+		t.Fatal("water should not be walkable")
+	}
+
+	ter.Set(3, 0, Forest)
+	if ter.IsWalkable(3, 0) {
+		t.Fatal("forest should not be walkable")
+	}
+
+	ter.Set(4, 0, Mountain)
+	if ter.IsWalkable(4, 0) {
+		t.Fatal("mountain should not be walkable")
+	}
+
+	ter.Set(5, 0, GoldMine)
+	if ter.IsWalkable(5, 0) {
+		t.Fatal("gold mine should not be walkable")
+	}
+
+	// Out of bounds
+	if ter.IsWalkable(-1, 0) {
+		t.Fatal("out of bounds should not be walkable")
+	}
+	if ter.IsWalkable(10, 0) {
+		t.Fatal("out of bounds should not be walkable")
+	}
+}
+
+func TestMovementSystem(t *testing.T) {
+	// Build a scenario with clean grass terrain (no generated features)
+	s := Scenario{
+		Terrain:  NewTerrain(32, 32),
+		World:    NewWorld(),
+		TickRate: 10,
+	}
+	// Terrain is all grass by default — walkable
+
+	// Spawn a peasant at (5,5) in fixed-point
+	id := s.World.Spawn(UnitPeasant, 5000, 5000, 0)
+	idx := id.Index()
+
+	// Issue move order east: target (10,5) center of tile
+	s.World.MoveTarget[idx] = MoveTarget{X: 10500, Y: 5500}
+	s.World.Entities[idx].Mask |= MaskMoveTarget
+
+	// Speed is 80 per tick, distance is ~5500 units, so need many ticks
+	for i := 0; i < 200; i++ {
+		s.Step()
+		if s.World.Entities[idx].Mask&MaskMoveTarget == 0 {
+			break
+		}
+	}
+
+	// MoveTarget should be cleared
+	if s.World.Entities[idx].Mask&MaskMoveTarget != 0 {
+		t.Fatal("MaskMoveTarget should be cleared after arrival")
+	}
+
+	// Should be at or near target
+	pos := s.World.Position[idx]
+	if pos.X != 10500 || pos.Y != 5500 {
+		t.Fatalf("expected position (10500,5500), got (%d,%d)", pos.X, pos.Y)
+	}
+}
+
+func TestMovementBlockedByWater(t *testing.T) {
+	s := Scenario{
+		Terrain:  NewTerrain(32, 32),
+		World:    NewWorld(),
+		TickRate: 10,
+	}
+
+	// Place water at tile (7,5)
+	s.Terrain.Set(7, 5, Water)
+
+	// Spawn peasant at tile (5,5) center
+	id := s.World.Spawn(UnitPeasant, 5500, 5500, 0)
+	idx := id.Index()
+
+	// Issue move order to (9,5) — must pass through water at (7,5)
+	s.World.MoveTarget[idx] = MoveTarget{X: 9500, Y: 5500}
+	s.World.Entities[idx].Mask |= MaskMoveTarget
+
+	for i := 0; i < 200; i++ {
+		s.Step()
+		if s.World.Entities[idx].Mask&MaskMoveTarget == 0 {
+			break
+		}
+	}
+
+	// Should have stopped — MaskMoveTarget cleared
+	if s.World.Entities[idx].Mask&MaskMoveTarget != 0 {
+		t.Fatal("MaskMoveTarget should be cleared when blocked")
+	}
+
+	// Should NOT be at the target
+	pos := s.World.Position[idx]
+	if pos.X == 9500 && pos.Y == 5500 {
+		t.Fatal("peasant should not have reached target through water")
+	}
+
+	// Should still be on the left side of the water tile
+	if pos.X/1000 >= 7 {
+		t.Fatalf("peasant should have stopped before water tile, got tile X=%d", pos.X/1000)
+	}
+}
+
+func TestIsqrt64(t *testing.T) {
+	cases := []struct {
+		input int64
+		want  int64
+	}{
+		{0, 0},
+		{1, 1},
+		{4, 2},
+		{9, 3},
+		{10, 3},
+		{15, 3},
+		{16, 4},
+		{100, 10},
+		{1000000, 1000},
+		{1000001, 1000},
+	}
+	for _, tc := range cases {
+		got := isqrt64(tc.input)
+		if got != tc.want {
+			t.Errorf("isqrt64(%d) = %d, want %d", tc.input, got, tc.want)
+		}
+	}
+}
+
+func TestMoveTargetComponentMask(t *testing.T) {
+	w := NewWorld()
+
+	id := w.Spawn(UnitPeasant, 5000, 5000, 0)
+	idx := id.Index()
+
+	// Peasant should not have MaskMoveTarget by default
+	if w.Entities[idx].Mask&MaskMoveTarget != 0 {
+		t.Fatal("peasant should not have MaskMoveTarget on spawn")
+	}
+
+	// Add move target dynamically
+	w.MoveTarget[idx] = MoveTarget{X: 10000, Y: 10000}
+	w.Entities[idx].Mask |= MaskMoveTarget
+
+	// Should be queryable via Each
+	count := int32(0)
+	w.Each(MaskMoveTarget, func(idx int32) bool {
+		count++
+		return true
+	})
+	if count != 1 {
+		t.Fatalf("expected 1 entity with MaskMoveTarget, got %d", count)
+	}
+
+	// Clear it
+	w.Entities[idx].Mask &^= MaskMoveTarget
+	count = 0
+	w.Each(MaskMoveTarget, func(idx int32) bool {
+		count++
+		return true
+	})
+	if count != 0 {
+		t.Fatalf("expected 0 entities with MaskMoveTarget after clear, got %d", count)
+	}
+}
+
 func TestSetupMatch(t *testing.T) {
 	s := NewScenario(128, 128)
 	if s.World.AliveCount != 0 {

@@ -74,12 +74,16 @@ func (g GameView) renderViewport() string {
 			fg = playerColor(g.scenario.World.Owner[idx].PlayerID)
 		}
 
-		// Use terrain bg color for blending
-		terrainTileX := int32(tileX)
-		terrainTileY := int32(tileY)
+		// Determine bg: selection highlight or terrain
 		bg := int32(0)
-		if g.scenario.Terrain.InBounds(terrainTileX, terrainTileY) {
-			_, _, _, bg = terrainGlyph(g.scenario.Terrain.At(terrainTileX, terrainTileY))
+		if selIdx, ok := g.selectedIdx(); ok && idx == selIdx {
+			bg = 255 // bright white background for selected unit
+		} else {
+			terrainTileX := int32(tileX)
+			terrainTileY := int32(tileY)
+			if g.scenario.Terrain.InBounds(terrainTileX, terrainTileY) {
+				_, _, _, bg = terrainGlyph(g.scenario.Terrain.At(terrainTileX, terrainTileY))
+			}
 		}
 
 		fb.Set(screenX, screenY, glyph, fg, bg)

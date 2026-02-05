@@ -16,6 +16,7 @@ const (
 	MaskRenderable                                 // 7
 	MaskResourceGatherer                           // 8
 	MaskResourceStore                              // 9
+	MaskMoveTarget                                 // 10
 )
 
 // EntityID packs a generation (high 16 bits) and a slot index (low 16 bits)
@@ -51,6 +52,7 @@ type World struct {
 	Renderable       [MaxEntities]Renderable
 	ResourceGatherer [MaxEntities]ResourceGatherer
 	ResourceStore    [MaxEntities]ResourceStore
+	MoveTarget       [MaxEntities]MoveTarget
 
 	freeList  [MaxEntities]int32
 	freeCount int32
@@ -94,6 +96,7 @@ func (w *World) Spawn(ut UnitType, x, y, playerID int32) EntityID {
 	w.Renderable[idx] = Renderable{}
 	w.ResourceGatherer[idx] = ResourceGatherer{}
 	w.ResourceStore[idx] = ResourceStore{}
+	w.MoveTarget[idx] = MoveTarget{}
 
 	// Stamp archetype values.
 	e := &w.Entities[idx]
