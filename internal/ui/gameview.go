@@ -15,6 +15,8 @@ type GameView struct {
 	width    int
 	height   int
 	tooSmall bool
+	camX     int // top-left tile X of viewport
+	camY     int // top-left tile Y of viewport
 }
 
 func NewGameView(scenario *game.Scenario, width, height int) GameView {
@@ -36,6 +38,7 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		g.width = msg.Width
 		g.height = msg.Height
 		g.tooSmall = msg.Width < minWidth || msg.Height < minHeight
+		g.clampCamera()
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -43,10 +46,81 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return g, tea.Quit
 		case "esc":
 			return NewMainMenuWithSize(g.width, g.height), nil
+		case "up", "w":
+			g.camY--
+			g.clampCamera()
+		case "down", "s":
+			g.camY++
+			g.clampCamera()
+		case "left", "a":
+			g.camX--
+			g.clampCamera()
+		case "right", "d":
+			g.camX++
+			g.clampCamera()
+		case "ctrl+up", "alt+up", "shift+up":
+			_, vpH := g.viewportSize()
+			g.camY -= vpH
+			g.clampCamera()
+		case "ctrl+down", "alt+down", "shift+down":
+			_, vpH := g.viewportSize()
+			g.camY += vpH
+			g.clampCamera()
+		case "ctrl+left", "alt+left", "shift+left":
+			vpW, _ := g.viewportSize()
+			g.camX -= vpW / 2
+			g.clampCamera()
+		case "ctrl+right", "alt+right", "shift+right":
+			vpW, _ := g.viewportSize()
+			g.camX += vpW / 2
+			g.clampCamera()
 		}
 	}
 
 	return g, nil
+}
+
+func (g *GameView) clampCamera() {
+	mapW := int(g.scenario.Terrain.Width)
+	mapH := int(g.scenario.Terrain.Height)
+	vpW, vpH := g.viewportSize()
+	tilesW := vpW / 2 // each tile is 2 terminal columns wide
+
+	maxX := mapW - tilesW
+	maxY := mapH - vpH
+	if maxX < 0 {
+		maxX = 0
+	}
+	if maxY < 0 {
+		maxY = 0
+	}
+
+	if g.camX < 0 {
+		g.camX = 0
+	}
+	if g.camX > maxX {
+		g.camX = maxX
+	}
+	if g.camY < 0 {
+		g.camY = 0
+	}
+	if g.camY > maxY {
+		g.camY = maxY
+	}
+}
+
+// viewportSize returns the inner dimensions of the viewport area (excluding border).
+func (g GameView) viewportSize() (w, h int) {
+	// 1 row for HUD, bottomPanelHeight for bottom panel, 2 for border
+	h = g.height - 1 - bottomPanelHeight - 2
+	if h < 1 {
+		h = 1
+	}
+	w = g.width - 2 // 2 for border
+	if w < 1 {
+		w = 1
+	}
+	return
 }
 
 func (g GameView) View() string {

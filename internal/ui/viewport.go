@@ -1,29 +1,61 @@
 package ui
 
 import (
+	"github.com/GiGurra/tais2/internal/game"
 	"github.com/charmbracelet/lipgloss"
 )
 
+// terrainGlyph maps a terrain type to a display rune, whether it's wide, and colors.
+// Wide glyphs (like emoji) naturally occupy 2 terminal columns.
+// Narrow glyphs are repeated to fill the 2-column tile.
+func terrainGlyph(t game.TerrainType) (glyph rune, wide bool, fg, bg int32) {
+	switch t {
+	case game.Water:
+		return '~', false, 34, 17 // blue fg, dark blue bg
+	case game.Forest:
+		return '🌲', true, 34, 22 // green fg, dark green bg
+	case game.Dirt:
+		return '.', false, 178, 94 // yellow fg, brown bg
+	case game.Mountain:
+		return '^', false, 255, 240 // white fg, gray bg
+	default: // Grass
+		return '.', false, 34, 22 // green fg, dark green bg
+	}
+}
+
 func (g GameView) renderViewport() string {
-	// 1 row for HUD, bottomPanelHeight for bottom panel, 2 for border
-	vpHeight := g.height - 1 - bottomPanelHeight - 2
-	if vpHeight < 1 {
-		vpHeight = 1
-	}
-	vpWidth := g.width - 2 // 2 for border
-	if vpWidth < 1 {
-		vpWidth = 1
+	vpW, vpH := g.viewportSize()
+	tilesW := vpW / 2
+
+	fb := NewFrameBuffer(vpW, vpH)
+	fb.Clear()
+
+	// Blit terrain into framebuffer — each tile occupies 2 terminal columns
+	for y := 0; y < vpH; y++ {
+		for tx := 0; tx < tilesW; tx++ {
+			tileX := int32(g.camX + tx)
+			tileY := int32(g.camY + y)
+			screenX := tx * 2
+			if g.scenario.Terrain.InBounds(tileX, tileY) {
+				tt := g.scenario.Terrain.At(tileX, tileY)
+				glyph, wide, fg, bg := terrainGlyph(tt)
+				if wide {
+					fb.SetWide(screenX, y, glyph, fg, bg)
+				} else {
+					fb.Set(screenX, y, glyph, fg, bg)
+					fb.Set(screenX+1, y, glyph, fg, bg)
+				}
+			}
+		}
 	}
 
-	placeholder := "Empty battlefield"
-
-	content := lipgloss.Place(vpWidth, vpHeight, lipgloss.Center, lipgloss.Center, placeholder)
+	content := fb.String()
 
 	style := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("8")).
-		Width(vpWidth).
-		Height(vpHeight)
+		Width(vpW).
+		Height(vpH)
 
 	return style.Render(content)
 }

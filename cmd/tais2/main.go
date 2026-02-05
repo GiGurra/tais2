@@ -42,7 +42,7 @@ func main() {
 					boa.ParamEnricherBool,
 				),
 				RunFunc: func(cfg *SingleBattleConfig, cmd *cobra.Command, args []string) {
-					scenario := game.NewScenario(64, 48)
+					scenario := game.NewScenario(128, 128)
 					if cfg.Snapshot {
 						view := ui.NewGameView(&scenario, minWidth, minHeight)
 						fmt.Print(view.View())

@@ -22,14 +22,49 @@ func (g GameView) renderMinimap(width, height int) string {
 	if g.scenario.Terrain.Width == 0 || g.scenario.Terrain.Height == 0 {
 		content = lipgloss.Place(innerW, innerH, lipgloss.Center, lipgloss.Center, "No map")
 	} else {
-		// Scaled-down terrain representation
+		mapW := int(g.scenario.Terrain.Width)
+		mapH := int(g.scenario.Terrain.Height)
+		vpW, vpH := g.viewportSize()
+		tilesW := vpW / 2 // each tile is 2 terminal columns wide
+
+		// Camera rect in minimap coordinates
+		camLeft := g.camX * innerW / mapW
+		camTop := g.camY * innerH / mapH
+		camRight := (g.camX + tilesW) * innerW / mapW
+		camBot := (g.camY + vpH) * innerH / mapH
+
+		camBG := lipgloss.NewStyle().Background(lipgloss.Color("236"))
+
 		var rows []string
 		for y := 0; y < innerH; y++ {
 			ty := int32(y) * g.scenario.Terrain.Height / int32(innerH)
 			var row strings.Builder
-			for x := 0; x < innerW; x++ {
+			x := 0
+			for x < innerW {
 				tx := int32(x) * g.scenario.Terrain.Width / int32(innerW)
-				row.WriteByte(terrainChar(g.scenario.Terrain.At(tx, ty)))
+				ch := string(terrainChar(g.scenario.Terrain.At(tx, ty)))
+				inCam := x >= camLeft && x < camRight && y >= camTop && y < camBot
+
+				// Group consecutive cells with the same in/out-of-camera state
+				var span strings.Builder
+				span.WriteString(ch)
+				x++
+				for x < innerW {
+					tx2 := int32(x) * g.scenario.Terrain.Width / int32(innerW)
+					ch2 := string(terrainChar(g.scenario.Terrain.At(tx2, ty)))
+					inCam2 := x >= camLeft && x < camRight && y >= camTop && y < camBot
+					if inCam2 != inCam {
+						break
+					}
+					span.WriteString(ch2)
+					x++
+				}
+
+				if inCam {
+					row.WriteString(camBG.Render(span.String()))
+				} else {
+					row.WriteString(span.String())
+				}
 			}
 			rows = append(rows, row.String())
 		}

@@ -17,12 +17,19 @@ func (g GameView) renderHUD() string {
 		return true
 	})
 
+	vpW, vpH := g.viewportSize()
+
 	left := "  Gold: " + itoa(int(gold)) +
 		"    Lumber: " + itoa(int(lumber)) +
 		"    Supply: 0/0" +
 		"    Tick: " + itoa(int(g.scenario.Tick))
 
-	right := "[ESC] Menu  "
+	tilesW := vpW / 2
+
+	right := "Cam:" + itoa(g.camX) + "," + itoa(g.camY) +
+		" View:" + itoa(tilesW) + "x" + itoa(vpH) +
+		" Map:" + itoa(int(g.scenario.Terrain.Width)) + "x" + itoa(int(g.scenario.Terrain.Height)) +
+		"  [ESC] Menu  "
 
 	gap := g.width - len(left) - len(right)
 	if gap < 1 {
