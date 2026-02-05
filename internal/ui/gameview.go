@@ -2,6 +2,7 @@ package ui
 
 import (
 	"strings"
+	"time"
 
 	"github.com/GiGurra/tais2/internal/game"
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,6 +10,8 @@ import (
 )
 
 const bottomPanelHeight = 10
+
+type tickMsg struct{}
 
 type GameView struct {
 	scenario *game.Scenario
@@ -29,7 +32,17 @@ func NewGameView(scenario *game.Scenario, width, height int) GameView {
 }
 
 func (g GameView) Init() tea.Cmd {
-	return nil
+	return g.tickCmd()
+}
+
+func (g GameView) tickCmd() tea.Cmd {
+	rate := g.scenario.TickRate
+	if rate <= 0 {
+		rate = 10
+	}
+	return tea.Tick(time.Second/time.Duration(rate), func(time.Time) tea.Msg {
+		return tickMsg{}
+	})
 }
 
 func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -39,6 +52,10 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		g.height = msg.Height
 		g.tooSmall = msg.Width < minWidth || msg.Height < minHeight
 		g.clampCamera()
+
+	case tickMsg:
+		g.scenario.Step()
+		return g, g.tickCmd()
 
 	case tea.KeyMsg:
 		switch msg.String() {

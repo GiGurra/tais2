@@ -115,6 +115,7 @@ func (m MainMenu) activate() (tea.Model, tea.Cmd) {
 	switch m.selected {
 	case menuSkirmish:
 		scenario := game.NewScenario(128, 128)
+		game.SetupMatch(&scenario)
 		return NewGameView(&scenario, m.width, m.height), nil
 	case menuExit:
 		return m, tea.Quit

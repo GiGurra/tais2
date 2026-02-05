@@ -43,6 +43,7 @@ func main() {
 				),
 				RunFunc: func(cfg *SingleBattleConfig, cmd *cobra.Command, args []string) {
 					scenario := game.NewScenario(128, 128)
+					game.SetupMatch(&scenario)
 					if cfg.Snapshot {
 						view := ui.NewGameView(&scenario, minWidth, minHeight)
 						fmt.Print(view.View())

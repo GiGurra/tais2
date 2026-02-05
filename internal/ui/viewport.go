@@ -51,6 +51,43 @@ func (g GameView) renderViewport() string {
 		}
 	}
 
+	// Unit rendering pass — draw entities on top of terrain
+	g.scenario.World.Each(game.MaskPosition|game.MaskRenderable, func(idx int32) bool {
+		pos := g.scenario.World.Position[idx]
+		tileX := int(pos.X / 1000)
+		tileY := int(pos.Y / 1000)
+
+		// Convert to screen coords relative to camera
+		screenX := (tileX - g.camX) * 2
+		screenY := tileY - g.camY
+
+		// Skip off-screen entities
+		if screenX < 0 || screenX+1 >= vpW || screenY < 0 || screenY >= vpH {
+			return true
+		}
+
+		glyph := g.scenario.World.Renderable[idx].Glyph
+
+		// Determine fg color: use player color for owned entities
+		fg := g.scenario.World.Renderable[idx].Color
+		if g.scenario.World.Entities[idx].Mask&game.MaskOwner != 0 {
+			fg = playerColor(g.scenario.World.Owner[idx].PlayerID)
+		}
+
+		// Use terrain bg color for blending
+		terrainTileX := int32(tileX)
+		terrainTileY := int32(tileY)
+		bg := int32(0)
+		if g.scenario.Terrain.InBounds(terrainTileX, terrainTileY) {
+			_, _, _, bg = terrainGlyph(g.scenario.Terrain.At(terrainTileX, terrainTileY))
+		}
+
+		fb.Set(screenX, screenY, glyph, fg, bg)
+		fb.Set(screenX+1, screenY, glyph, fg, bg)
+
+		return true
+	})
+
 	content := fb.String()
 
 	style := lipgloss.NewStyle().
@@ -60,4 +97,16 @@ func (g GameView) renderViewport() string {
 		Height(vpH)
 
 	return style.Render(content)
+}
+
+// playerColor returns the ANSI color for a player ID.
+func playerColor(playerID int32) int32 {
+	switch playerID {
+	case 0:
+		return 27 // blue
+	case 1:
+		return 196 // red
+	default:
+		return 7 // white
+	}
 }

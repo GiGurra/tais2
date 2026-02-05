@@ -168,3 +168,78 @@ func TestNewScenario(t *testing.T) {
 		t.Fatalf("expected 0 alive, got %d", s.World.AliveCount)
 	}
 }
+
+func TestTickRate(t *testing.T) {
+	s := NewScenario(64, 48)
+	if s.TickRate != 10 {
+		t.Fatalf("expected default TickRate=10, got %d", s.TickRate)
+	}
+}
+
+func TestStep(t *testing.T) {
+	s := NewScenario(64, 48)
+	if s.Tick != 0 {
+		t.Fatalf("expected tick 0, got %d", s.Tick)
+	}
+	s.Step()
+	if s.Tick != 1 {
+		t.Fatalf("expected tick 1 after Step, got %d", s.Tick)
+	}
+	s.Step()
+	s.Step()
+	if s.Tick != 3 {
+		t.Fatalf("expected tick 3 after 3 Steps, got %d", s.Tick)
+	}
+}
+
+func TestSetupMatch(t *testing.T) {
+	s := NewScenario(128, 128)
+	if s.World.AliveCount != 0 {
+		t.Fatalf("expected 0 alive before SetupMatch, got %d", s.World.AliveCount)
+	}
+
+	SetupMatch(&s)
+
+	if s.World.AliveCount != 10 {
+		t.Fatalf("expected 10 alive after SetupMatch, got %d", s.World.AliveCount)
+	}
+
+	// Count TownHalls and Peasants
+	townHalls := int32(0)
+	peasants := int32(0)
+	s.World.Each(MaskUnitType, func(idx int32) bool {
+		switch s.World.UnitTypeComp[idx].Type {
+		case UnitTownHall:
+			townHalls++
+		case UnitPeasant:
+			peasants++
+		}
+		return true
+	})
+
+	if townHalls != 2 {
+		t.Fatalf("expected 2 TownHalls, got %d", townHalls)
+	}
+	if peasants != 8 {
+		t.Fatalf("expected 8 Peasants, got %d", peasants)
+	}
+
+	// Verify player ownership: 5 entities per player
+	p0Count := int32(0)
+	p1Count := int32(0)
+	s.World.Each(MaskOwner, func(idx int32) bool {
+		switch s.World.Owner[idx].PlayerID {
+		case 0:
+			p0Count++
+		case 1:
+			p1Count++
+		}
+		return true
+	})
+	if p0Count != 5 {
+		t.Fatalf("expected 5 entities for player 0, got %d", p0Count)
+	}
+	if p1Count != 5 {
+		t.Fatalf("expected 5 entities for player 1, got %d", p1Count)
+	}
+}

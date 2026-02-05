@@ -10,6 +10,7 @@ type Scenario struct {
 	Terrain        Terrain
 	World          World
 	Tick           int32
+	TickRate       int32 // ticks per second (default 10)
 	StartPositions [2]StartPosition
 }
 
@@ -19,6 +20,7 @@ func NewScenario(mapWidth, mapHeight int32) Scenario {
 	return Scenario{
 		Terrain:        t,
 		World:          NewWorld(),
+		TickRate:       10,
 		StartPositions: sp,
 	}
 }
@@ -190,6 +192,35 @@ func abs32(v int32) int32 {
 		return -v
 	}
 	return v
+}
+
+// Step advances the simulation by one tick.
+func (s *Scenario) Step() {
+	s.Tick++
+	// Future systems called here in fixed order
+}
+
+// SetupMatch spawns starting units for both players.
+// For each player: 1 TownHall at the start position, 4 Peasants offset by 2 tiles.
+func SetupMatch(s *Scenario) {
+	for playerID := int32(0); playerID < 2; playerID++ {
+		sp := s.StartPositions[playerID]
+		cx := sp.X * 1000 // convert to fixed-point
+		cy := sp.Y * 1000
+
+		s.World.Spawn(UnitTownHall, cx, cy, playerID)
+
+		// 4 Peasants at cardinal offsets of 2 tiles
+		offsets := [4][2]int32{
+			{0, -2000}, // north
+			{0, 2000},  // south
+			{-2000, 0}, // west
+			{2000, 0},  // east
+		}
+		for _, off := range offsets {
+			s.World.Spawn(UnitPeasant, cx+off[0], cy+off[1], playerID)
+		}
+	}
 }
 
 // tileHash returns a deterministic pseudo-random value for a coordinate.
