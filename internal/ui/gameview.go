@@ -42,7 +42,7 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			return g, tea.Quit
 		case "esc":
 			return NewMainMenuWithSize(g.width, g.height), nil
