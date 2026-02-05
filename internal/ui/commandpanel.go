@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/GiGurra/tais2/internal/game"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -14,14 +15,17 @@ func (g GameView) renderCommandPanel(width, height int) string {
 		innerH = 1
 	}
 
-	_, hasSelection := g.selectedIdx()
+	idx, hasSelection := g.selectedIdx()
+	canMove := hasSelection && g.scenario.World.Entities[idx].Mask&game.MaskMovement != 0
 
 	var content string
 	switch {
 	case g.mode == modeMove:
 		content = "[M] Move: click target\n[Esc] Cancel"
-	case hasSelection:
+	case canMove:
 		content = "[M] Move"
+	case hasSelection:
+		content = "No commands"
 	default:
 		content = "Select a unit"
 	}

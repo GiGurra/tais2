@@ -145,9 +145,11 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return NewMainMenuWithSize(g.width, g.height), nil
 		case "m":
-			if _, ok := g.selectedIdx(); ok {
-				g.mode = modeMove
-				return g, nil
+			if idx, ok := g.selectedIdx(); ok {
+				if g.scenario.World.Entities[idx].Mask&game.MaskMovement != 0 {
+					g.mode = modeMove
+					return g, nil
+				}
 			}
 		case "up", "w":
 			g.camY--
