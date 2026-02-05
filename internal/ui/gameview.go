@@ -97,7 +97,9 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Action == tea.MouseActionRelease {
 			switch msg.Button {
 			case tea.MouseButtonLeft:
-				if g.mode == modeMove {
+				if tileX, tileY, ok := g.screenToMinimapTile(msg.X, msg.Y); ok {
+					g.centerCameraOn(tileX, tileY)
+				} else if g.mode == modeMove {
 					g.issueMoveClick(msg.X, msg.Y)
 					g.mode = modeSelect
 				} else {
@@ -158,6 +160,15 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return g, nil
+}
+
+// centerCameraOn moves the camera so the given tile is at the center of the viewport.
+func (g *GameView) centerCameraOn(tileX, tileY int) {
+	vpW, vpH := g.viewportSize()
+	tilesW := vpW / 2
+	g.camX = tileX - tilesW/2
+	g.camY = tileY - vpH/2
+	g.clampCamera()
 }
 
 func (g *GameView) clampCamera() {
