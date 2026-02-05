@@ -122,15 +122,21 @@ func (g GameView) minimapScreenRect() (x0, y0, x1, y1 int) {
 	_, vpH := g.viewportSize()
 	minimapW, _, _ := g.panelWidths()
 	innerW := minimapW - 2
+	innerH := bottomPanelHeight - 2
 
-	// Layout: HUD (1 row) + viewport border top (1) + vpH + viewport border bottom (1)
-	// = 1 + 1 + vpH + 1 = vpH + 3
-	topOfBottom := vpH + 3
-	// Minimap border adds 1 row top, 1 col left
-	x0 = 1            // left border of minimap
-	y0 = topOfBottom + 1 // top border of minimap
+	// Screen layout top-to-bottom:
+	//   Row 0:             HUD
+	//   Row 1:             viewport border top
+	//   Row 2..vpH+1:      viewport content (vpH rows)
+	//   Row vpH+2:         viewport border bottom
+	//   Row vpH+3:         minimap border top  (empirically confirmed)
+	//   Row vpH+4:         minimap border second row (box-drawing corner)
+	//   Row vpH+5..vpH+12: minimap content (8 rows)
+	//   Row vpH+13:        minimap border bottom
+	x0 = 0            // minimap border left (empirically tuned)
+	y0 = vpH + 3      // first content row (empirically tuned)
 	x1 = x0 + innerW
-	y1 = y0 + (bottomPanelHeight - 2)
+	y1 = y0 + innerH
 	return
 }
 

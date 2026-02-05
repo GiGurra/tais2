@@ -33,6 +33,9 @@ type GameView struct {
 	scriptExec *script.Executor // optional script executor
 	speed      int32            // tick rate multiplier (1 = normal)
 	mode       inputMode        // current input mode
+	debug      bool             // show debug info in HUD
+	lastMouseX int              // last mouse screen X (for debug)
+	lastMouseY int              // last mouse screen Y (for debug)
 }
 
 func NewGameView(scenario *game.Scenario, width, height int) GameView {
@@ -56,6 +59,12 @@ func NewGameViewWithScript(scenario *game.Scenario, width, height int, exec *scr
 		scriptExec: exec,
 		speed:      speed,
 	}
+}
+
+// WithDebug returns a copy of the GameView with debug mode enabled.
+func (g GameView) WithDebug(debug bool) GameView {
+	g.debug = debug
+	return g
 }
 
 func (g GameView) Init() tea.Cmd {
@@ -94,6 +103,18 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return g, g.tickCmd()
 
 	case tea.MouseMsg:
+		g.lastMouseX = msg.X
+		g.lastMouseY = msg.Y
+
+		// Minimap drag: press or motion with left button held
+		if msg.Button == tea.MouseButtonLeft &&
+			(msg.Action == tea.MouseActionPress || msg.Action == tea.MouseActionMotion) {
+			if tileX, tileY, ok := g.screenToMinimapTile(msg.X, msg.Y); ok {
+				g.centerCameraOn(tileX, tileY)
+				return g, nil
+			}
+		}
+
 		if msg.Action == tea.MouseActionRelease {
 			switch msg.Button {
 			case tea.MouseButtonLeft:

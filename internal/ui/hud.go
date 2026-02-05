@@ -18,15 +18,28 @@ func (g GameView) renderHUD() string {
 	})
 
 	vpW, vpH := g.viewportSize()
-
-	left := "  Gold: " + itoa(int(gold)) +
-		"    Lumber: " + itoa(int(lumber)) +
-		"    Supply: 0/0" +
-		"    Tick: " + itoa(int(g.scenario.Tick))
-
 	tilesW := vpW / 2
 
-	right := "Cam:" + itoa(g.camX) + "," + itoa(g.camY) +
+	var left, right string
+
+	if g.debug {
+		x0, y0, x1, y1 := g.minimapScreenRect()
+		mmHit := ""
+		if tx, ty, ok := g.screenToMinimapTile(g.lastMouseX, g.lastMouseY); ok {
+			mmHit = " Hit:" + itoa(tx) + "," + itoa(ty)
+		}
+		left = "  M:" + itoa(g.lastMouseX) + "," + itoa(g.lastMouseY) +
+			" MM:" + itoa(x0) + "," + itoa(y0) + "-" + itoa(x1) + "," + itoa(y1) +
+			mmHit +
+			"  Tick:" + itoa(int(g.scenario.Tick))
+	} else {
+		left = "  Gold: " + itoa(int(gold)) +
+			"    Lumber: " + itoa(int(lumber)) +
+			"    Supply: 0/0" +
+			"    Tick: " + itoa(int(g.scenario.Tick))
+	}
+
+	right = "Cam:" + itoa(g.camX) + "," + itoa(g.camY) +
 		" View:" + itoa(tilesW) + "x" + itoa(vpH) +
 		" Map:" + itoa(int(g.scenario.Terrain.Width)) + "x" + itoa(int(g.scenario.Terrain.Height)) +
 		"  [ESC] Menu  "

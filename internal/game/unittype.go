@@ -28,7 +28,7 @@ var archetypes = map[UnitType]Archetype{
 	UnitPeasant: {
 		Mask: MaskPosition | MaskHealth | MaskMovement | MaskOwner | MaskUnitType | MaskRenderable | MaskResourceGatherer,
 		Health:     Health{Current: 30, Max: 30},
-		Movement:   Movement{Speed: 80},
+		Movement:   Movement{Speed: 160},
 		Renderable: Renderable{Glyph: 'P', Color: 7},
 		ResourceGatherer: ResourceGatherer{
 			GatherRate: 10,

@@ -20,6 +20,7 @@ type SingleBattleConfig struct {
 	Snapshot bool   `descr:"Print one frame and exit"`
 	Script   string `descr:"Path to script file for playback"`
 	Speed    int32  `descr:"Tick rate multiplier" default:"1"`
+	Debug    bool   `descr:"Show debug info in HUD"`
 }
 
 type SimulateConfig struct {
@@ -64,10 +65,12 @@ func main() {
 						if speed < 1 {
 							speed = 1
 						}
-						runInteractive(ui.NewGameViewWithScript(&scenario, 0, 0, exec, speed))
+						gv := ui.NewGameViewWithScript(&scenario, 0, 0, exec, speed).WithDebug(cfg.Debug)
+						runInteractive(gv)
 						return
 					}
-					runInteractive(ui.NewGameView(&scenario, 0, 0))
+					gv := ui.NewGameView(&scenario, 0, 0).WithDebug(cfg.Debug)
+					runInteractive(gv)
 				},
 			},
 			boa.CmdT[SimulateConfig]{
