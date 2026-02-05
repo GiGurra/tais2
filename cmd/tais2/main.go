@@ -18,7 +18,7 @@ type Config struct {
 
 type SingleBattleConfig struct {
 	Snapshot bool   `descr:"Print one frame and exit"`
-	Script   string `descr:"Path to script file for playback"`
+	Script   string `descr:"Path to script file for playback" required:"false"`
 	Speed    int32  `descr:"Tick rate multiplier" default:"1"`
 	Debug    bool   `descr:"Show debug info in HUD"`
 }
