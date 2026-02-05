@@ -280,10 +280,14 @@ func (g GameView) screenToTile(mx, my int) (tileX, tileY int32, ok bool) {
 	return tileX, tileY, true
 }
 
-// findEntityAtTile returns the EntityID of an entity at the given tile, or -1.
+// findEntityAtTile returns the EntityID of a player-0 entity at the given tile, or -1.
+// Only units owned by the local player (0) can be selected.
 func (g GameView) findEntityAtTile(tileX, tileY int32) game.EntityID {
 	result := game.EntityID(-1)
-	g.scenario.World.Each(game.MaskPosition, func(idx int32) bool {
+	g.scenario.World.Each(game.MaskPosition|game.MaskOwner, func(idx int32) bool {
+		if g.scenario.World.Owner[idx].PlayerID != 0 {
+			return true
+		}
 		pos := g.scenario.World.Position[idx]
 		etx := pos.X / 1000
 		ety := pos.Y / 1000

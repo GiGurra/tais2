@@ -40,6 +40,15 @@ func (g GameView) renderSelection(width, height int) string {
 
 		lines := ""
 
+		if e.Mask&game.MaskOwner != 0 {
+			pid := w.Owner[idx].PlayerID
+			color := lipgloss.Color(itoa(int(playerColor(pid))))
+			tag := lipgloss.NewStyle().
+				Foreground(color).
+				Bold(true).
+				Render("Player " + itoa(int(pid)))
+			lines += tag + "  "
+		}
 		if e.Mask&game.MaskUnitType != 0 {
 			lines += unitTypeName(w.UnitTypeComp[idx].Type)
 		}
