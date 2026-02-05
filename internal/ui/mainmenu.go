@@ -141,20 +141,22 @@ func (m MainMenu) renderTooSmall() string {
 
 // menuStartY returns the Y coordinate where the first menu button starts rendering.
 func (m MainMenu) menuStartY() int {
-	// The menu block is vertically centered. Each button is 3 lines tall, with 1 line gap between.
-	// Total menu height: menuItemCount*3 + (menuItemCount-1)*1 + title(1) + gap(2)
-	titleLines := 4 // title + blank lines above/below
-	menuBlockHeight := int(menuItemCount)*3 + (int(menuItemCount)-1)*1
+	// Title art is 7 lines + 1 blank line gap = 8 lines before buttons.
+	// Each button is 5 lines tall (1 padding + 1 content + 1 padding + 2 border) with 1 line gap between.
+	titleLines := 8
+	btnHeight := 5
+	menuBlockHeight := int(menuItemCount)*btnHeight + (int(menuItemCount)-1)*1
 	totalHeight := titleLines + menuBlockHeight
 	return (m.height - totalHeight) / 2 + titleLines
 }
 
 func (m MainMenu) hitTestMenu(y int) (menuItem, bool) {
 	startY := m.menuStartY()
+	btnHeight := 5
 	for i := 0; i < int(menuItemCount); i++ {
-		// Each button occupies 3 rows, with 1 row gap between buttons
-		btnTop := startY + i*4
-		btnBottom := btnTop + 2
+		// Each button occupies 5 rows, with 1 row gap between buttons
+		btnTop := startY + i*(btnHeight+1)
+		btnBottom := btnTop + btnHeight - 1
 		if y >= btnTop && y <= btnBottom {
 			return menuItem(i), true
 		}
@@ -162,12 +164,20 @@ func (m MainMenu) hitTestMenu(y int) (menuItem, bool) {
 	return 0, false
 }
 
+const titleArt = `
+████████╗ █████╗ ██╗███████╗    ██████╗
+╚══██╔══╝██╔══██╗██║██╔════╝    ╚════██╗
+   ██║   ███████║██║███████╗     █████╔╝
+   ██║   ██╔══██║██║╚════██║    ██╔═══╝
+   ██║   ██║  ██║██║███████║    ███████╗
+   ╚═╝   ╚═╝  ╚═╝╚═╝╚══════╝    ╚══════╝`
+
 func (m MainMenu) renderMenu() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("2"))
 
-	title := titleStyle.Render("T A I S  2")
+	title := titleStyle.Render(titleArt)
 
 	var buttons []string
 	for i := 0; i < int(menuItemCount); i++ {
@@ -178,7 +188,6 @@ func (m MainMenu) renderMenu() string {
 	menu := lipgloss.JoinVertical(lipgloss.Center, buttons...)
 
 	block := lipgloss.JoinVertical(lipgloss.Center,
-		"",
 		title,
 		"",
 		menu,
@@ -188,12 +197,12 @@ func (m MainMenu) renderMenu() string {
 }
 
 func (m MainMenu) renderButton(label string, selected bool) string {
-	width := 30
+	width := 44
 
 	base := lipgloss.NewStyle().
 		Width(width).
 		Align(lipgloss.Center).
-		Padding(0, 2).
+		Padding(1, 2).
 		Border(lipgloss.RoundedBorder())
 
 	if selected {
