@@ -14,6 +14,14 @@ const bottomPanelHeight = 10
 
 type tickMsg struct{}
 
+// inputMode tracks what happens on the next left-click.
+type inputMode int
+
+const (
+	modeSelect inputMode = iota // default: left-click selects
+	modeMove                    // left-click issues move order
+)
+
 type GameView struct {
 	scenario   *game.Scenario
 	width      int
@@ -21,9 +29,10 @@ type GameView struct {
 	tooSmall   bool
 	camX       int // top-left tile X of viewport
 	camY       int // top-left tile Y of viewport
-	selection  game.EntityID        // selected entity (-1 = none)
-	scriptExec *script.Executor     // optional script executor
-	speed      int32                // tick rate multiplier (1 = normal)
+	selection  game.EntityID    // selected entity (-1 = none)
+	scriptExec *script.Executor // optional script executor
+	speed      int32            // tick rate multiplier (1 = normal)
+	mode       inputMode        // current input mode
 }
 
 func NewGameView(scenario *game.Scenario, width, height int) GameView {
@@ -88,19 +97,17 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Action == tea.MouseActionRelease {
 			switch msg.Button {
 			case tea.MouseButtonLeft:
-				if tileX, tileY, ok := g.screenToTile(msg.X, msg.Y); ok {
-					g.selection = g.findEntityAtTile(tileX, tileY)
-				}
-			case tea.MouseButtonRight:
-				if selIdx, ok := g.selectedIdx(); ok {
-					if tileX, tileY, okTile := g.screenToTile(msg.X, msg.Y); okTile {
-						// Issue move order — center of tile
-						targetX := tileX*1000 + 500
-						targetY := tileY*1000 + 500
-						g.scenario.World.MoveTarget[selIdx] = game.MoveTarget{X: targetX, Y: targetY}
-						g.scenario.World.Entities[selIdx].Mask |= game.MaskMoveTarget
+				if g.mode == modeMove {
+					g.issueMoveClick(msg.X, msg.Y)
+					g.mode = modeSelect
+				} else {
+					if tileX, tileY, ok := g.screenToTile(msg.X, msg.Y); ok {
+						g.selection = g.findEntityAtTile(tileX, tileY)
 					}
 				}
+			case tea.MouseButtonRight:
+				// Right-click move (works on Alacritty, Kitty, WezTerm; not iTerm2)
+				g.issueMoveClick(msg.X, msg.Y)
 			}
 		}
 
@@ -109,7 +116,16 @@ func (g GameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return g, tea.Quit
 		case "esc":
+			if g.mode != modeSelect {
+				g.mode = modeSelect
+				return g, nil
+			}
 			return NewMainMenuWithSize(g.width, g.height), nil
+		case "m":
+			if _, ok := g.selectedIdx(); ok {
+				g.mode = modeMove
+				return g, nil
+			}
 		case "up", "w":
 			g.camY--
 			g.clampCamera()
@@ -221,6 +237,22 @@ func (g GameView) renderBottomPanel() string {
 	commands := g.renderCommandPanel(commandsW, bottomPanelHeight)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, minimap, selection, commands)
+}
+
+// issueMoveClick issues a move order for the selected unit to the clicked tile.
+func (g *GameView) issueMoveClick(mx, my int) {
+	selIdx, ok := g.selectedIdx()
+	if !ok {
+		return
+	}
+	tileX, tileY, ok := g.screenToTile(mx, my)
+	if !ok {
+		return
+	}
+	targetX := tileX*1000 + 500
+	targetY := tileY*1000 + 500
+	g.scenario.World.MoveTarget[selIdx] = game.MoveTarget{X: targetX, Y: targetY}
+	g.scenario.World.Entities[selIdx].Mask |= game.MaskMoveTarget
 }
 
 // selectedIdx returns the slot index of the selected entity if it is alive.

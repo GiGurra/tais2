@@ -14,7 +14,19 @@ func (g GameView) renderCommandPanel(width, height int) string {
 		innerH = 1
 	}
 
-	content := lipgloss.Place(innerW, innerH, lipgloss.Center, lipgloss.Center, "No commands")
+	_, hasSelection := g.selectedIdx()
+
+	var content string
+	switch {
+	case g.mode == modeMove:
+		content = "[M] Move: click target\n[Esc] Cancel"
+	case hasSelection:
+		content = "[M] Move"
+	default:
+		content = "Select a unit"
+	}
+
+	content = lipgloss.Place(innerW, innerH, lipgloss.Center, lipgloss.Center, content)
 
 	style := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
