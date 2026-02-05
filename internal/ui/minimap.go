@@ -90,6 +90,8 @@ func terrainChar(t game.TerrainType) byte {
 		return '.'
 	case game.Mountain:
 		return '^'
+	case game.GoldMine:
+		return '$'
 	default: // Grass
 		return ' '
 	}

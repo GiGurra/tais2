@@ -18,6 +18,8 @@ func terrainGlyph(t game.TerrainType) (glyph rune, wide bool, fg, bg int32) {
 		return '.', false, 178, 94 // yellow fg, brown bg
 	case game.Mountain:
 		return '^', false, 255, 240 // white fg, gray bg
+	case game.GoldMine:
+		return '$', false, 220, 94 // yellow fg, brown bg
 	default: // Grass
 		return '.', false, 34, 22 // green fg, dark green bg
 	}

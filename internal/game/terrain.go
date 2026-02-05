@@ -9,6 +9,7 @@ const (
 	Forest   TerrainType = 2
 	Dirt     TerrainType = 3
 	Mountain TerrainType = 4
+	GoldMine TerrainType = 5
 )
 
 // Terrain is a 2D grid of terrain tiles stored in row-major order.
