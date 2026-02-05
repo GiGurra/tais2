@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 
+	"github.com/GiGurra/tais2/internal/game"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -43,6 +44,14 @@ type MainMenu struct {
 
 func NewMainMenu() MainMenu {
 	return MainMenu{}
+}
+
+func NewMainMenuWithSize(width, height int) MainMenu {
+	return MainMenu{
+		width:    width,
+		height:   height,
+		tooSmall: width < minWidth || height < minHeight,
+	}
 }
 
 func (m MainMenu) Init() tea.Cmd {
@@ -104,10 +113,12 @@ func (m MainMenu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m MainMenu) activate() (tea.Model, tea.Cmd) {
 	switch m.selected {
+	case menuSkirmish:
+		scenario := game.NewScenario(64, 48)
+		return NewGameView(&scenario, m.width, m.height), nil
 	case menuExit:
 		return m, tea.Quit
 	default:
-		// Other menu items are stubs for now
 		return m, nil
 	}
 }
